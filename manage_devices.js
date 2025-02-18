@@ -14,9 +14,7 @@ var dic_ini_states = new Dict("initial_states");
 var this_id = new LiveAPI("this_device").id;
 var max_lvl = 0;
 
-var live_set_path = "live_set";
-var live_set = new LiveAPI(null, live_set_path);
-var trackCount = live_set.getcount("tracks");
+
 
 
 function iterateDevices(api)
@@ -95,6 +93,10 @@ dequotePath.local = 1;
 
 
 function get_tracks() {
+
+	var live_set_path = "live_set";
+	var live_set = new LiveAPI(null, live_set_path);
+	var trackCount = live_set.getcount("tracks");
     
 
     outlet(0,"rows " + trackCount)
@@ -215,6 +217,9 @@ function set_colors(tr_dic,cell,d,is_grouped){
 }
 
 function clear_colors(){
+	var live_set_path = "live_set";
+	var live_set = new LiveAPI(null, live_set_path);
+	var trackCount = live_set.getcount("tracks");
 	for (var i=0 ; i<10 ; i++) {
 		for (var j=0 ; j<trackCount ; j++) {
 			outlet(0,"cell " + i + " "+ j + " brgb") 

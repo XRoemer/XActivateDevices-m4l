@@ -9,6 +9,7 @@ var dic = new Dict("deactivate_devs");
 var dic_devs = new Dict("devices");
 var dic_maps = new Dict("mappings");
 var dic_row_ids = new Dict("row_ids");
+var dic_id_row = new Dict("id_row");
 var dic_ini_states = new Dict("initial_states");
 
 var this_id = new LiveAPI("this_device").id;
@@ -121,6 +122,7 @@ function get_tracks() {
         var lvl
 
         dic_row_ids.set(i.toString(),id)
+        dic_id_row.set(id,i.toString())
 
         tr_dic.set("nr", i)
         tr_dic.set("id", id)
@@ -150,21 +152,8 @@ function get_tracks() {
         outlet(0,"cell " + cell + " readonly 1");
        
         iterateDevices(track)
-
-        //init_colors()
-        //set_colors(tr_dic,cell,dic);
-        
     }
     for (var i=0 ; i<trackCount ; i++) {
-
-    	// var bcol = "211 211 211 100";
-    	// for (var j=0 ; j<9 ; j++) {
-    	// 	var cell = j + " " + i;
-    		
-    	// 	outlet(0,"cell " + cell + " brgb " + bcol )
-    	// }
-
-
     	
     	id = dic_row_ids.get(i)
     	tr_dic = dic.get(id)
@@ -173,8 +162,8 @@ function get_tracks() {
     	set_colors(tr_dic,cell,dic);
 
     }
-    set_initial_mappings()
-    post("maxLvl",max_lvl,"\n")
+    set_initial_mappings()   
+    load_initial_states() 
 }
 
 function get_lvl(id,par_id,d,folder){
@@ -343,8 +332,8 @@ function set_initial_mappings(){
 		var fcol = "155 50 50 255"
 		outlet(0,"cell " + cell + " frgb " + fcol )
 	}
-
 }
+
 function set_initial_states(dev_nr,row,txt){
 	if(txt == "xxx") {return}
 	if(dev_nr < 0) {return}
@@ -368,5 +357,31 @@ function set_initial_states(dev_nr,row,txt){
 	} else {
 		bcol = "0 150 0"
 		outlet(0,"cell " + cell + " brgb " + bcol )
+	}	
+}
+function load_initial_states(){
+
+	var keys = dic_ini_states.getkeys()
+	for (var i=0 ; i<keys.length ; i++) {
+		var id_track = keys[i]
+		var row = dic_id_row.get(id_track)
+		
+		var devices = dic_devs.get(id_track)
+		var keys_dev = devices.getkeys()
+		//post(key,"\n")
+
+		for (var j=0 ; j<keys_dev.length ; j++) {
+			var k = keys_dev[j]
+			var ini_state = devices.get(k+"::initial_state")
+
+			var cell = (6+j) + " " + row
+			if (ini_state == 1) {
+				bcol = "0 255 0"
+				outlet(0,"cell " + cell + " brgb " + bcol )
+			} else {
+				bcol = "0 150 0"
+				outlet(0,"cell " + cell + " brgb " + bcol )
+			}
+		}
 	}	
 }

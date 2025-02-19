@@ -8,4 +8,6 @@ set the connection to the buttons in the plugin by setting numbers on the left r
 TODO:
 save settings and mappings
 
+amount of rows is hardcoded at the moment
+
 

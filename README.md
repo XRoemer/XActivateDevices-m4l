@@ -7,8 +7,6 @@ set the connection to the buttons in the plugin by setting numbers on the left r
 
 midimap XActivateDevices' Buttons to a midi control in Ableton Live
 
-TODO:
 
-amount of rows is hardcoded at the moment
 
 

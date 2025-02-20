@@ -362,17 +362,21 @@ function set_initial_states(dev_nr,row,txt){
 function load_initial_states(){
 
 	var keys = dic_ini_states.getkeys()
+	if (!keys) {return}
 	for (var i=0 ; i<keys.length ; i++) {
 		var id_track = keys[i]
+
+		if (!(dic_devs.contains(id_track))) {
+			dic_ini_states.remove(id_track)
+			continue
+		}
 		var row = dic_id_row.get(id_track)
-		
-		var devices = dic_devs.get(id_track)
+		var devices = dic_ini_states.get(id_track)
 		var keys_dev = devices.getkeys()
-		//post(key,"\n")
+		
 
 		for (var j=0 ; j<keys_dev.length ; j++) {
-			var k = keys_dev[j]
-			var ini_state = devices.get(k+"::initial_state")
+			var ini_state = devices.get(j.toString())
 
 			var cell = (6+j) + " " + row
 			if (ini_state == 1) {
@@ -382,6 +386,11 @@ function load_initial_states(){
 				bcol = "0 150 0"
 				outlet(0,"cell " + cell + " brgb " + bcol )
 			}
+			// post("ini_states",id_track,j,ini_state,"\n")
 		}
 	}	
 }
+
+// function clear_initial_states() {
+// 	dic_ini_states = new Dict("initial_states");
+// }

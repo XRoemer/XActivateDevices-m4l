@@ -12,15 +12,23 @@ var dic_row_ids = new Dict("row_ids");
 var dic_id_row = new Dict("id_row");
 var dic_ini_states = new Dict("initial_states");
 
-var this_id = new LiveAPI("this_device").id;
-var max_lvl = 0;
 
 
+function set_globals(){
+	this_id = new LiveAPI("this_device").id;
+	nesting_depth_tracks = 0;
+	max_devs_lvl = 0;
+	live_set_path = "live_set";
+	live_set = new LiveAPI(null, live_set_path);
+	trackCount = live_set.getcount("tracks");
+
+}
 
 
 function iterateDevices(api)
 {
 	var count = api.getcount("devices");
+	max_devs_lvl = Math.max(max_devs_lvl,count)
 	var apiPath = dequotePath(api);	
 
 	var id = api.id
@@ -37,9 +45,6 @@ function iterateDevices(api)
 
 				var deviceName = deviceApi.get("name")[0];
 				var deviceApiPath = dequotePath(deviceApi);
-				var chainsCount;
-				var chainApi;
-				var j;
 
 				ddic.set("id",deviceApi.id)
 				ddic.set("name",deviceName)
@@ -49,35 +54,24 @@ function iterateDevices(api)
         		var val = d_on.get("value")
 				ddic.set("initial_state",val)
 
-				var cell = (x + 2) + " " + y + " ";
-				var cell = (6 + i) + " " + y + " ";
+				var cell = (nesting_depth_tracks + i ) + " " + y + " ";
 				
 		        outlet(0,"set " + cell + deviceName);
 		        outlet(0,"cell " + cell + " readonly 1");
 
-		        var bcol = "180 180 180"
-		        var fcol = "0 0 0"
-		        if (val == 1){ bcol = " 250 250 250"}
+		        if (!(dic_ini_states.contains(deviceApi.id))){
+		        	var bcol = "180 180 180"
+			        var fcol = "0 0 0"
+			        if (val == 1){ bcol = " 250 250 250"}
 
-		        outlet(0,"cell " + cell + " brgb " + bcol )
-		    	outlet(0,"cell " + cell + " frgb " + fcol )
+			        outlet(0,"cell " + cell + " brgb " + bcol )
+			    	outlet(0,"cell " + cell + " frgb " + fcol )
+		        }
+		        
 
 		        dic_devs.replace(id+"::"+i.toString(),ddic)
 
 		        x += 1
-		        
-				// if (deviceApi.get("can_have_chains") == 1) {
-				// 	chainsCount = deviceApi.getcount("chains"); // only racks have chains
-				// 	for (j = 0; j < chainsCount; j++) {
-				// 		chainApi = new LiveAPI(deviceApiPath + " chains " + j);
-				// 		iterateDevices(chainApi);
-				// 	}
-				// 	chainsCount = deviceApi.getcount("return_chains"); // only racks have chains
-				// 	for (j = 0; j < chainsCount; j++) {
-				// 		chainApi = new LiveAPI(deviceApiPath + " return_chains " + j);
-				// 		iterateDevices(chainApi);
-				// 	}
-				// }
 			}
 			catch (error){post("FEHLER " + error)}
 		}
@@ -94,10 +88,12 @@ dequotePath.local = 1;
 
 
 function get_tracks() {
+	set_globals()
+	nesting_depth_tracks = 0;
 
 	var live_set_path = "live_set";
 	var live_set = new LiveAPI(null, live_set_path);
-	var trackCount = live_set.getcount("tracks");
+	//var trackCount = live_set.getcount("tracks");
     
 
     outlet(0,"rows " + trackCount)
@@ -130,6 +126,7 @@ function get_tracks() {
         tr_dic.set("is_grouped", is_grouped)
         tr_dic.set("group_tr", group_tr)
         tr_dic.set("children", [id])
+        tr_dic.set("path", track_path)
 
         var cols = get_colors(track)
         tr_dic.set("fcol",cols[0])
@@ -143,7 +140,7 @@ function get_tracks() {
         	folder = get_lvl(id,group_tr,dic,folder);
         }
         var lvl = folder.length
-        max_lvl = Math.max(max_lvl,lvl+2)
+        nesting_depth_tracks = Math.max(nesting_depth_tracks,lvl)
         tr_dic.set("lvl", lvl)
         dic.set(id.toString(), tr_dic);
 
@@ -151,19 +148,42 @@ function get_tracks() {
         outlet(0,"set " + cell + name);
         outlet(0,"cell " + cell + " readonly 1");
        
-        iterateDevices(track)
+        
     }
+
+    nesting_depth_tracks += 3
+
     for (var i=0 ; i<trackCount ; i++) {
-    	
-    	id = dic_row_ids.get(i)
-    	tr_dic = dic.get(id)
-    	lvl = tr_dic.get("lvl")
+
+    	var id = dic_row_ids.get(i.toString())
+    	var tr_dic = dic.get(id)
+    	var lvl = tr_dic.get("lvl")
+    	var name = tr_dic.get("name")
     	var cell = (lvl+1) + " " + i + " ";
+
+        outlet(0,"set " + cell + name);
+        outlet(0,"cell " + cell + " readonly 1");
     	set_colors(tr_dic,cell,dic);
 
+    	var path = tr_dic.get("path")
+    	var track = new LiveAPI(path);
+    	iterateDevices(track)
+
     }
+    outlet(0,"cols " + (max_devs_lvl + nesting_depth_tracks))
     set_initial_mappings()   
     load_initial_states() 
+    set_presentation_rects()
+}
+
+function set_presentation_rects() {
+	var rows = trackCount
+	var cols = max_devs_lvl + nesting_depth_tracks
+	var width = 12 + (cols -1)*64
+	var height =  rows*14 + 2
+	post(rows,cols, "\n")
+	post("presentation_rect 1. 1. " + width + ". " + height + ".\n")
+	outlet(0,"presentation_rect 1. 1. " + width + ". " + height + ".")
 }
 
 function get_lvl(id,par_id,d,folder){
@@ -208,8 +228,8 @@ function set_colors(tr_dic,cell,d,is_grouped){
 function clear_colors(){
 	var live_set_path = "live_set";
 	var live_set = new LiveAPI(null, live_set_path);
-	var trackCount = live_set.getcount("tracks");
-	for (var i=0 ; i<10 ; i++) {
+	//var trackCount = live_set.getcount("tracks");
+	for (var i=0 ; i<(max_devs_lvl + nesting_depth_tracks+1) ; i++) {
 		for (var j=0 ; j<trackCount ; j++) {
 			outlet(0,"cell " + i + " "+ j + " brgb") 
 			outlet(0,"cell " + i + " "+ j + " frgb")
@@ -323,6 +343,7 @@ function set_mappings(row, group){
 
 function set_initial_mappings(){
 	var keys = dic_maps.getkeys()
+	if (!(keys)){return}
 	for (var i=0 ; i<keys.length ; i++) {
 		var key = keys[i]
 		var val = dic_maps.get(key)
@@ -336,6 +357,8 @@ function set_initial_mappings(){
 
 function set_initial_states(dev_nr,row,txt){
 	if(txt == "xxx") {return}
+	//post(dev_nr,nesting_depth_tracks,'\n')
+	dev_nr -= (nesting_depth_tracks)
 	if(dev_nr < 0) {return}
 
 	var id = dic_row_ids.get(row)
@@ -343,6 +366,7 @@ function set_initial_states(dev_nr,row,txt){
 	if (dic_ini_states.contains(id)) {
 		ini_state = dic_ini_states.get(id+"::"+dev_nr.toString())
 	} else {
+		//post(id,dev_nr,max_devs_lvl,'\n')
 		ini_state = dic_devs.get(id).get(dev_nr).get("initial_state")
 	}
 
@@ -350,7 +374,7 @@ function set_initial_states(dev_nr,row,txt){
 		else {ini_state = 1}
 	dic_ini_states.replace(id+"::"+dev_nr , ini_state)
 
-	var cell = (6+dev_nr) + " " + row
+	var cell = (nesting_depth_tracks+dev_nr) + " " + row
 	if (ini_state == 1) {
 		bcol = "0 255 0"
 		outlet(0,"cell " + cell + " brgb " + bcol )
@@ -378,7 +402,7 @@ function load_initial_states(){
 		for (var j=0 ; j<keys_dev.length ; j++) {
 			var ini_state = devices.get(j.toString())
 
-			var cell = (6+j) + " " + row
+			var cell = (nesting_depth_tracks+j) + " " + row
 			if (ini_state == 1) {
 				bcol = "0 255 0"
 				outlet(0,"cell " + cell + " brgb " + bcol )

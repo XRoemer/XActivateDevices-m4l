@@ -8,5 +8,8 @@ set the connection to the buttons in the plugin by setting numbers on the left r
 midimap XActivateDevices' Buttons to a midi control in Ableton Live
 
 
+At the moment the Plugin doesn't observe any changes made on tracks or devices. So after changes on the arrangement the plugin needs a refresh and mappings have to be set again.
+
+
 
 
